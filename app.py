@@ -132,8 +132,11 @@ def hello():
 
 @app.route("/customers")
 def cust_show():
+    print ("step0")
     cust_list = [customer.to_dict() for customer in Customer.query.all()]
+    print ("step1")
     json_data = json.dumps(cust_list)
+    print ("step2")
     return json_data
 
 
@@ -173,6 +176,8 @@ def search_customer(name):
     return json_data
 
 ##################### Customer End point ####################
+
+
 
 
 ######################### Book Start Point ####################
