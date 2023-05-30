@@ -66,7 +66,7 @@ def hello():
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <link href="https://fonts.googleapis.com/css?family=Droid+Sans:400,700" rel="stylesheet">
   <link rel="stylesheet" href="https://rawgit.com/LeshikJanz/libraries/master/Bootstrap/baguetteBox.min.css">
-  <link rel="stylesheet" href="Mainpage.css">
+  <link rel="stylesheet" href="/templates/Mainpage.css">
   <style>
     .book-image {
       width: 100%;
@@ -132,11 +132,13 @@ def hello():
 
 @app.route("/customers")
 def cust_show():
-    print ("step0")
-    cust_list = [customer.to_dict() for customer in Customer.query.all()]
-    print ("step1")
+    print ("start")
+    customers = Customer.query.all()
+    print ("customers: " + str(customers))
+    cust_list = [customer.to_dict() for customer in customers]
+    print ("list: " + str(cust_list))
     json_data = json.dumps(cust_list)
-    print ("step2")
+    print ("json: " + str(json_data))
     return json_data
 
 
