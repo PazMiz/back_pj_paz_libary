@@ -29,6 +29,9 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 
 app.json_encoder = CustomJSONEncoder
+@app.route('/')
+def hello():
+    return "hey"
 
 
 #################### Customer Start point ####################
@@ -51,83 +54,6 @@ class Customer(db.Model):
             'city': self.city,
             'age': self.age,
         }
-
-
-@app.route('/')
-def hello():
-    return """
-    <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Paz Main Page</title>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  <link href="https://fonts.googleapis.com/css?family=Droid+Sans:400,700" rel="stylesheet">
-  <link rel="stylesheet" href="https://rawgit.com/LeshikJanz/libraries/master/Bootstrap/baguetteBox.min.css">
-  <link rel="stylesheet" href="/templates/Mainpage.css">
-  <style>
-    .book-image {
-      width: 100%;
-      height: auto;
-    }
-  </style>
-</head>
-<body>
-
-<nav class="navbar navbar-default">
-  <div class="container-fluid">
-    <div class="navbar-header">
-      <a class="navbar-brand" href="">Paz Library</a>
-    </div>
-    <ul class="nav navbar-nav">
-      <li><a href="index.html">Home Page</a></li>
-      <li><a href="newBook.html">Books Section</a></li>
-      <li><a href="newCustomer.html">Add Customer</a></li>
-      <li><a href="viewCustomers.html">Customer List</a></li>
-      <li><a href="loanbook.html">Loan Section</a></li>
-      <li><a href="about.html">About Paz Project</a></li>
-    </ul>
-  </div>
-</nav>
-
-<div class="container gallery-container">
-  <h1>Paz Library Main Page</h1>
-
-  <div class="tz-gallery">
-    <div class="row">
-      <div class="col-sm-12 col-md-4">
-        <a href="newBook.html">
-          <img src="https://www.magazinesdirect.com/images/covers/vlarge-BKZ-B6347.jpg" alt="Book 5" class="book-image">
-        </a>
-      </div>
-            <div class="col-sm-6 col-md-4">
-              <a href="newBook.html">
-
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQL8dtd2WlZaLCPccHRC_3hGRN-WjlGIquzfg&usqp=CAU" alt="Book 6" class="book-image">
-      </div>
-      <div class="col-sm-6 col-md-4">
-        <a href="newBook.html">
-        <img src="https://assets.brightspot.abebooks.a2z.com/dims4/default/4732796/2147483647/strip/true/crop/360x420+0+0/resize/360x420!/format/jpg/quality/90/?url=http%3A%2F%2Fabebooks-brightspot.s3.amazonaws.com%2Fd7%2F64%2F2d238724472395bdf4398ef6ab60%2Fsorcerers-stone.png" alt="Book 6" class="book-image">
-      </div>
-      <div class="col-sm-12 col-md-8">
-        <p style="color: #0f0707;">© 2023 Copyrights Paz Website</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/baguettebox.js/1.8.1/baguetteBox.min.js"></script>
-<script>
-    baguetteBox.run('.tz-gallery');
-    const MY_SERVER = 'https://paz-pj-libaray.onrender.com';
-
-</script>
-</body>
-</html>
-
-    """
 
 
 @app.route("/customers")
@@ -206,9 +132,18 @@ class Book(db.Model):
 
 @app.route("/books")
 def book_show():
-    book_list = [book.to_dict() for book in Book.query.all()]
-    json_data = json.dumps(book_list)
-    return json_data
+    book_list = []
+    books = Book.query.all()
+    for book in books:
+        book_dict = {
+            'id': book.id,
+            'bookname': book.bookname,  # Replace 'title' with the appropriate column name from your Book table
+            'writer': book.writer,  # Replace 'writer' with the appropriate column name from your Book table
+            'year_published': book.year_published,  # Replace 'year_published' with the appropriate column name from your Book table
+            'book_loan': book.book_loan,  # Replace 'book_loan' with the appropriate column name from your Book table
+        }
+        book_list.append(book_dict)
+    return jsonify(book_list)
 
 
 @app.route('/books/new', methods=['POST'])
@@ -315,23 +250,6 @@ def loans_show():
     return json_data
 
 
-@app.route('/loans/view/late')
-def view_late_loan_S():
-    loan_list = [loan.to_dict() for loan in Loan.query.all()]
-    late_loan_list = []
-    today_date = date.today()
-
-    for current_loan in loan_list:
-        if "returndate" in current_loan:
-            get_return_date = datetime.strptime(current_loan["returndate"], '%Y-%m-%d')
-            returndate = datetime.date(get_return_date)
-
-            if check_return_date(returndate):
-                late_loan_list.append(current_loan)
-
-    loans_as_json_data = json.dumps(late_loan_list)
-    return loans_as_json_data
-
 def check_return_date(return_date):
     current_date = date.today()
     late_threshold = current_date - timedelta(days=10)
@@ -379,37 +297,23 @@ def delete_loan(loan_id):
 
 @app.route('/returnbook', methods=['POST'])
 def return_book():
-    try:
-        data = request.get_json()
-        id = data['id']
-        cust_id = data['cust_id']
-        book_id = data['book_id']
-        return_date = datetime.strptime(data['return_date'], '%Y-%m-%d')
+    data = request.get_json()
+    cust_name = data['cust_name']
+    bookname = data['bookname']
 
-        # Retrieve the existing loan record
-        loan = Loan.query.filter_by(id=id, cust_id=cust_id, book_id=book_id).first()
+    loan = Loan.query.join(Customer).join(Book).filter(Customer.name == cust_name, Book.bookname == bookname).first()
 
-        if not loan:
-            return 'No loan record found for the given customer and book.', 404
+    if not loan:
+        return "No loan record found for the given customer and book."
 
-        # Retrieve the book instance
-        book = Book.query.get(book_id)
+    if not loan.book.loan_active:
+        return "Book is already marked as returned."
 
-        if not book:
-            return 'No book record found with the given book ID.', 404
+    loan.book.loan_active = False
+    loan.return_date = date.today()
+    db.session.commit()
 
-        # Change the book status from unavailable to available
-        book.book_loan = "0"
-
-        # Update the return_date
-        loan.return_date = return_date
-        db.session.commit()
-
-        return 'Book returned and deleted successfully.', 200
-    except Exception as e:
-        print(e)  # Log the exception for debugging
-        #return 'An error occurred. Please try again.', 500
-
+    return "Book returned successfully."
 
 
 ############# Loan end point ####################
